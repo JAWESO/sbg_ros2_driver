@@ -131,6 +131,10 @@ private:
   bool                        nmea_publish_;
   std::string                 nmea_full_topic_;
 
+  bool                        ext_velocity_aiding_subscribe_;
+  std::string                 ext_velocity_aiding_full_topic_;
+  SbgEComVelocityTimeType     ext_velocity_aiding_time_type_;
+
   //---------------------------------------------------------------------//
   //- Private  methods                                                  -//
   //---------------------------------------------------------------------//
@@ -262,6 +266,13 @@ private:
    * \param[in] ref_node_handle   ROS nodeHandle.
    */
   void loadNmeaParameters(const rclcpp::Node& ref_node_handle);
+
+  /*!
+   * Load external velocity aiding parameters.
+   *
+   * \param[in] ref_node_handle   ROS nodeHandle.
+   */
+  void loadExtVelocityAidingParameters(const rclcpp::Node& ref_node_handle);
 
 public:
 
@@ -574,6 +585,27 @@ public:
    * \return                      String with NMEA namespace + topic.
    */
   const std::string &getNmeaFullTopic() const;
+
+  /*!
+   * Returns if the node should subscribe to the external velocity aiding topic.
+   *
+   * \return                      True to subscribe to external velocity aiding messages.
+   */
+  bool shouldSubscribeToExtVelocityAiding() const;
+
+  /*!
+   * Get external velocity aiding full topic.
+   *
+   * \return                      String with external velocity aiding namespace + topic.
+   */
+  const std::string &getExtVelocityAidingFullTopic() const;
+
+  /*!
+   * Get the time type for the external velocity aiding message.
+   *
+   * \return                      Velocity time type (TIMESTAMP, DELAY, or TIME_OF_WEEK).
+   */
+  SbgEComVelocityTimeType getExtVelocityAidingTimeType() const;
 
   //---------------------------------------------------------------------//
   //- Operations                                                        -//

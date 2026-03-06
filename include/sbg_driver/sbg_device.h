@@ -41,6 +41,7 @@
 #include <std_srvs/srv/set_bool.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <rtcm_msgs/msg/message.hpp>
+#include <geometry_msgs/msg/twist_with_covariance_stamped.hpp>
 
 // Project headers
 #include <config_applier.h>
@@ -83,7 +84,8 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr        calib_service_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr        calib_save_service_;
 
-  rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr  rtcm_sub_;
+  rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr                          rtcm_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr  ext_velocity_aiding_sub_;
 
   uint32_t                                                  log_replay_last_timestamp_;
 
@@ -228,6 +230,14 @@ private:
    * \param[in] msg             ROS RTCM message.
    */
   void writeRtcmMessageToDevice(const rtcm_msgs::msg::Message::SharedPtr msg);
+
+  /*!
+   * Handler for subscription to external velocity aiding topic.
+   * Sends the velocity measurement to the SBG device as SBG_ECOM_LOG_VELOCITY_1.
+   *
+   * \param[in] msg             ROS TwistWithCovarianceStamped message from an external aiding sensor.
+   */
+  void sendExtVelocityAidingToDevice(const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
 
 public:
 

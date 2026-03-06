@@ -4,6 +4,7 @@
 // Standard headers
 #include <iomanip>
 #include <fstream>
+#include <cmath>
 #include <ctime>
 
 // SbgECom headers
@@ -344,6 +345,16 @@ void SbgDevice::initSubscribers()
 
     rtcm_sub_ = ref_node_.create_subscription<rtcm_msgs::msg::Message>(config_store_.getRtcmFullTopic(), 10, rtcm_cb);
   }
+
+  if (config_store_.shouldSubscribeToExtVelocityAiding())
+  {
+    auto velocity_aiding_cb = [&](const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg) -> void {
+        this->sendExtVelocityAidingToDevice(msg);
+    };
+
+    ext_velocity_aiding_sub_ = ref_node_.create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+      config_store_.getExtVelocityAidingFullTopic(), 10, velocity_aiding_cb);
+  }
 }
 
 void SbgDevice::configure()
@@ -601,6 +612,51 @@ void SbgDevice::writeRtcmMessageToDevice(const rtcm_msgs::msg::Message::SharedPt
 
     sbgEComErrorToString(error_code, error_str);
     SBG_LOG_ERROR(SBG_ERROR, "Failed to sent RTCM data to device: %s", error_str);
+  }
+}
+
+void SbgDevice::sendExtVelocityAidingToDevice(const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg)
+{
+  SbgEComLogVelocity  velocity_log   = {};
+  uint8_t             buffer[64]     = {};
+  SbgStreamBuffer     stream_buffer;
+  SbgErrorCode        error_code;
+
+  velocity_log.velocity[0]    = static_cast<float>(msg->twist.twist.linear.x);
+  velocity_log.velocity[1]    = static_cast<float>(msg->twist.twist.linear.y);
+  velocity_log.velocity[2]    = static_cast<float>(msg->twist.twist.linear.z);
+
+  // Extract standard deviations from the diagonal of the 6x6 covariance matrix (row-major order)
+  velocity_log.velocityStd[0] = static_cast<float>(std::sqrt(msg->twist.covariance[0]));
+  velocity_log.velocityStd[1] = static_cast<float>(std::sqrt(msg->twist.covariance[7]));
+  velocity_log.velocityStd[2] = static_cast<float>(std::sqrt(msg->twist.covariance[14]));
+
+  // Set validity flags for all three velocity components and standard deviations
+  velocity_log.status |= SBG_ECOM_VELOCITY_0_VALID | SBG_ECOM_VELOCITY_1_VALID | SBG_ECOM_VELOCITY_2_VALID | SBG_ECOM_VELOCITY_STD_VALID;
+
+  // Set time type and timestamp from config
+  sbgEComLogVelocitySetTimeType(&velocity_log, config_store_.getExtVelocityAidingTimeType());
+  velocity_log.timeStamp = 0;
+
+  sbgStreamBufferInitForWrite(&stream_buffer, buffer, sizeof(buffer));
+  error_code = sbgEComLogVelocityWriteToStream(&velocity_log, &stream_buffer);
+
+  if (error_code == SBG_NO_ERROR)
+  {
+    error_code = sbgEComProtocolSend(
+      &com_handle_.protocolHandle,
+      static_cast<uint8_t>(SBG_ECOM_CLASS_LOG_ECOM_0),
+      static_cast<uint8_t>(SBG_ECOM_LOG_VELOCITY_1),
+      sbgStreamBufferGetLinkedBuffer(&stream_buffer),
+      sbgStreamBufferGetLength(&stream_buffer));
+  }
+
+  if (error_code != SBG_NO_ERROR)
+  {
+    char error_str[256];
+
+    sbgEComErrorToString(error_code, error_str);
+    RCLCPP_ERROR(ref_node_.get_logger(), "SBG DRIVER - Failed to send external velocity aiding to device: %s", error_str);
   }
 }
 

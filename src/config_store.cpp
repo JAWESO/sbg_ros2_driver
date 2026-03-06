@@ -17,7 +17,9 @@ file_communication_(false),
 configure_through_ros_(false),
 ros_standard_output_(false),
 rtcm_subscribe_(false),
-nmea_publish_(false)
+nmea_publish_(false),
+ext_velocity_aiding_subscribe_(false),
+ext_velocity_aiding_time_type_(SBG_ECOM_VELOCITY_TIME_TYPE_DELAY)
 {
 
 }
@@ -222,6 +224,29 @@ void ConfigStore::loadNmeaParameters(const rclcpp::Node &ref_node_handle)
   ref_node_handle.get_parameter_or<std::string>("nmea.namespace",   nmea_namespace,         "ntrip_client");
 
   nmea_full_topic_ = nmea_namespace + "/" + topic_name;
+}
+
+void ConfigStore::loadExtVelocityAidingParameters(const rclcpp::Node &ref_node_handle)
+{
+  std::string     topic_name;
+  std::string     aiding_namespace;
+  int             time_type;
+
+  ref_node_handle.get_parameter_or<bool>        ("ext_velocity_aiding.subscribe",   ext_velocity_aiding_subscribe_, false);
+  ref_node_handle.get_parameter_or<std::string> ("ext_velocity_aiding.topic_name",  topic_name,                     "ext_velocity_aiding");
+  ref_node_handle.get_parameter_or<std::string> ("ext_velocity_aiding.namespace",   aiding_namespace,               "");
+  ref_node_handle.get_parameter_or<int>         ("ext_velocity_aiding.time_type",   time_type,                      static_cast<int>(SBG_ECOM_VELOCITY_TIME_TYPE_DELAY));
+
+  ext_velocity_aiding_time_type_ = static_cast<SbgEComVelocityTimeType>(time_type);
+
+  if (aiding_namespace.empty())
+  {
+    ext_velocity_aiding_full_topic_ = topic_name;
+  }
+  else
+  {
+    ext_velocity_aiding_full_topic_ = aiding_namespace + "/" + topic_name;
+  }
 }
 
 //---------------------------------------------------------------------//
@@ -438,6 +463,21 @@ const std::string &ConfigStore::getNmeaFullTopic() const
   return nmea_full_topic_;
 }
 
+bool ConfigStore::shouldSubscribeToExtVelocityAiding() const
+{
+  return ext_velocity_aiding_subscribe_;
+}
+
+const std::string &ConfigStore::getExtVelocityAidingFullTopic() const
+{
+  return ext_velocity_aiding_full_topic_;
+}
+
+SbgEComVelocityTimeType ConfigStore::getExtVelocityAidingTimeType() const
+{
+  return ext_velocity_aiding_time_type_;
+}
+
 //---------------------------------------------------------------------//
 //- Operations                                                        -//
 //---------------------------------------------------------------------//
@@ -456,6 +496,7 @@ void ConfigStore::loadFromRosNodeHandle(const rclcpp::Node& ref_node_handle)
   loadOutputFrameParameters(ref_node_handle);
   loadRtcmParameters(ref_node_handle);
   loadNmeaParameters(ref_node_handle);
+  loadExtVelocityAidingParameters(ref_node_handle);
 
   loadOutputTimeReference(ref_node_handle, "output.time_reference");
 

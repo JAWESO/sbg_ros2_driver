@@ -314,3 +314,17 @@
       topic_name: nmea
       # Namespace where to publish topic
       namespace: ntrip_client
+
+    ext_velocity_aiding:
+      # Should ros driver subscribe to external velocity aiding topic
+      # Use this to input velocity from external aiding sensors (camera, LiDAR, radar, etc.)
+      subscribe: false
+      # Topic on which external velocity aiding data is published (geometry_msgs/TwistWithCovarianceStamped)
+      topic_name: ext_velocity_aiding
+      # Namespace where topic is published (leave empty for no namespace prefix)
+      namespace: ""
+      # Timestamp type for the velocity aiding message sent to the SBG device:
+      # 0: TIMESTAMP    - timeStamp field is time since INS power up in us
+      # 1: DELAY        - timeStamp field is a measurement delay in us (default, use 0 for no delay)
+      # 2: TIME_OF_WEEK - timeStamp field is GPS time of the week in ms
+      time_type: 1
