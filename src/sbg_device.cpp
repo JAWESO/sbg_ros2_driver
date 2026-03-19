@@ -653,9 +653,14 @@ void SbgDevice::sendExtVelocityAidingToDevice(const geometry_msgs::msg::TwistWit
 
   if (error_code == SBG_NO_ERROR)
   {
+    const auto velocity_time_type = sbgEComLogVelocityGetTimeType(&velocity_log);
+
     RCLCPP_INFO(
       ref_node_.get_logger(),
-      "SBG DRIVER - External velocity aiding sent to device: v=[%.3f, %.3f, %.3f] m/s std=[%.3f, %.3f, %.3f] m/s",
+      "SBG DRIVER - External velocity aiding sent to device: time_stamp=%u time_type=%u status=0x%04X v=[%.3f, %.3f, %.3f] m/s std=[%.3f, %.3f, %.3f] m/s",
+      velocity_log.timeStamp,
+      static_cast<unsigned int>(velocity_time_type),
+      velocity_log.status,
       velocity_log.velocity[0],
       velocity_log.velocity[1],
       velocity_log.velocity[2],
