@@ -651,7 +651,19 @@ void SbgDevice::sendExtVelocityAidingToDevice(const geometry_msgs::msg::TwistWit
       sbgStreamBufferGetLength(&stream_buffer));
   }
 
-  if (error_code != SBG_NO_ERROR)
+  if (error_code == SBG_NO_ERROR)
+  {
+    RCLCPP_INFO(
+      ref_node_.get_logger(),
+      "SBG DRIVER - External velocity aiding sent to device: v=[%.3f, %.3f, %.3f] m/s std=[%.3f, %.3f, %.3f] m/s",
+      velocity_log.velocity[0],
+      velocity_log.velocity[1],
+      velocity_log.velocity[2],
+      velocity_log.velocityStd[0],
+      velocity_log.velocityStd[1],
+      velocity_log.velocityStd[2]);
+  }
+  else
   {
     char error_str[256];
 
